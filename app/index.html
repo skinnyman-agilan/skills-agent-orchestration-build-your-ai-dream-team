@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Project Pulse</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <h1>Project Pulse</h1>
+    <p class="lead">At-a-glance status of active projects.</p>
+  </header>
+
+  <main role="main">
+    <section class="dashboard" aria-live="polite" data-test="dashboard">
+      <!-- Project cards will be injected here -->
+    </section>
+  </main>
+
+  <script>
+    async function loadProjects() {
+      try {
+        const res = await fetch('project-data.json');
+        if (!res.ok) throw new Error('Network response was not ok');
+        const data = await res.json();
+        const projects = data.projects || [];
+        const container = document.querySelector('.dashboard');
+        if (!projects.length) {
+          container.innerHTML = '<div class="empty">No project data available.</div>';
+          return;
+        }
+        container.innerHTML = projects.map(p => (
+          `<article class="project-card" data-test="project-${p.id}">
+            <header class="project-card__header">
+              <h2 class="project-title">${escapeHtml(p.name)}</h2>
+              <div class="status-badge status-${escapeAttr(p.status)}">${escapeHtml(p.status)}</div>
+            </header>
+            <div class="project-meta">
+              <div class="owner">Owner: <strong>${escapeHtml(p.owner)}</strong></div>
+              <div class="recent-activity">Recent: ${escapeHtml(p.recentActivity)}</div>
+              <div class="priority ${'priority-' + escapeAttr(p.priority)}">Priority: ${escapeHtml(p.priority)}</div>
+            </div>
+          </article>`
+        )).join('');
+      } catch (err) {
+        const container = document.querySelector('.dashboard');
+        container.innerHTML = `<div class="error">Failed to load project data: ${escapeHtml(err.message)}</div>`;
+        console.error(err);
+      }
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
+    }
+    function escapeAttr(str){ return String(str||'').replace(/[^a-z0-9-_]/gi,'').toLowerCase(); }
+
+    document.addEventListener('DOMContentLoaded', loadProjects);
+  </script>
+</body>
+</html>
